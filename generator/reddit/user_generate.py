@@ -13,13 +13,29 @@
 # =========== Copyright 2023 @ CAMEL-AI.org. All Rights Reserved. ===========
 import json
 import random
+import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+import os
 
 from openai import OpenAI
 
-# Set your OpenAI API key
-client = OpenAI(api_key='sk-xxx')
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Generate synthetic Reddit user profiles")
+    parser.add_argument("--openai-api-key", type=str, required=True, help="OpenAI API key")
+    parser.add_argument("--openai-base-url", type=str, default=None, help="OpenAI base URL (optional)")
+    parser.add_argument("--model-name", type=str, default="gpt-3.5-turbo", help="Model name to use")
+    parser.add_argument("--max-workers", type=int, default=100, help="Maximum number of worker threads")
+    parser.add_argument("--N-of-agents", type=int, default=10000, help="Number of user profiles to generate")
+    parser.add_argument("--output-path", type=str, default="./experiment_dataset/user_data/user_data_10000.json", help="Output file path")
+    return parser.parse_args()
+
+
+# Initialize client with CLI parameters
+args = parse_arguments()
+client = OpenAI(api_key=args.openai_api_key)
+if args.openai_base_url:
+    client.base_url = args.openai_base_url
 
 # Gender ratio
 gender_ratio = [0.351, 0.636]
@@ -83,7 +99,7 @@ def get_random_country():
     country = random.choices(countries, country_ratio)[0]
     if country == "Other":
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model=args.model_name,
             messages=[{
                 "role": "system",
                 "content": "Select a real country name randomly:"
@@ -116,7 +132,7 @@ def get_interested_topics(mbti, age, gender, country, profession):
     [list of topic numbers]
     Ensure your output could be parsed to **list**, don't output anything else."""  # noqa: E501
 
-    response = client.chat.completions.create(model="gpt-3.5-turbo",
+    response = client.chat.completions.create(model=args.model_name,
                                               messages=[{
                                                   "role": "system",
                                                   "content": prompt
@@ -127,28 +143,31 @@ def get_interested_topics(mbti, age, gender, country, profession):
 
 
 def generate_user_profile(age, gender, mbti, profession, topics):
-    prompt = f"""Please generate a social media user profile based on the provided personal information, including a real name, username, user bio, and a new user persona. The focus should be on creating a fictional background story and detailed interests based on their hobbies and profession.
-    Input:
-        age: {age}
-        gender: {gender}
-        mbti: {mbti}
-        profession: {profession}
-        interested topics: {topics}
-    Output:
-    {{
-        "realname": "str",
-        "username": "str",
-        "bio": "str",
-        "persona": "str"
-    }}
-    Ensure the output can be directly parsed to **JSON**, do not output anything else."""  # noqa: E501
+    prompt = f"""
+    Please generate a social media user profile based on the provided personal information, including a real name, username, user bio, and a new user persona. The focus should be on creating a fictional background story and detailed interests based on their hobbies and profession.
+    Generate ONLY a valid JSON object. Do NOT include any markdown, code fences, explanations, or extra text. Output must start with {{ and end with }} and be parseable by json.loads().
 
-    response = client.chat.completions.create(model="gpt-3.5-turbo",
+        Input:
+            age: {age}
+            gender: {gender}
+            mbti: {mbti}
+            profession: {profession}
+            interested topics: {topics}
+
+        Output:
+        {{
+            "realname": "str",
+            "username": "str",
+            "bio": "str",
+            "persona": "str"
+        }}"""
+
+    response = client.chat.completions.create(model=args.model_name,
                                               messages=[{
                                                   "role": "system",
                                                   "content": prompt
                                               }])
-
+    
     profile = response.choices[0].message.content.strip()
     return json.loads(profile)
 
@@ -169,6 +188,7 @@ def index_to_topics(index_lst):
         result.append(topic)
     return result
 
+profile_generation_failures = 0
 
 def create_user_profile():
     while True:
@@ -191,13 +211,14 @@ def create_user_profile():
             profile['interested_topics'] = topics
             return profile
         except Exception as e:
-            print(f"Profile generation failed: {e}. Retrying...")
+            profile_generation_failures += 1
+            print(f"Profile generation failed: {e}.\n Cumulated failure counts: {profile_generation_failures} times...\nRetrying...")
 
 
 def generate_user_data(n):
     user_data = []
     start_time = datetime.now()
-    max_workers = 100  # Adjust according to your system capability
+    max_workers = args.max_workers  # Adjust according to your system capability
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [executor.submit(create_user_profile) for _ in range(n)]
         for i, future in enumerate(as_completed(futures)):
@@ -215,8 +236,8 @@ def save_user_data(user_data, filename):
 
 
 if __name__ == "__main__":
-    N = 10000  # Target user number
+    N = args.N_of_agents  # Target user number
     user_data = generate_user_data(N)
-    output_path = 'experiment_dataset/user_data/user_data_10000.json'
+    output_path = args.output_path
     save_user_data(user_data, output_path)
-    print(f"Generated {N} user profiles and saved to {output_path}")
+    print(f"Generated {N} user profiles and saved to {output_path} Overall failure counts: {profile_generation_failures} times. Error rate: {profile_generation_failures/N:.2%}")
