@@ -40,6 +40,21 @@ Ensuring excellent documentation and thorough testing is absolutely crucial. Her
   - Include unit tests in the `test` directory.
   - Add a demo script in the `examples` directory.
 
+### Recent Contributions 🚀
+
+This section documents recent significant contributions to the OASIS project:
+
+- **CLI Enhancement for User Profile Generation**: Added command-line interface arguments to both user generation scripts (`user_generate.py` and `user_generate_detailed.py`) to support:
+  - `--openai-api-key`: Your OpenAI API key (required)
+  - `--openai-base-url`: Custom OpenAI base URL (optional)
+  - `--model-name`: Model name to use (optional, defaults to "gpt-3.5-turbo")
+  - `--max-workers`: Maximum number of worker threads (optional, defaults to 100)
+  - `--N-of-agents`: Number of user profiles to generate (optional, defaults to 10000)
+  - `--output-path`: Output file path (optional, defaults vary by mode)
+- **Unified User Generation Script**: Created `generate_users.py` that serves as a convenient wrapper to run either simple or detailed generation with a single command
+- **Comprehensive Documentation**: Created detailed documentation in `docs/user_generation_guide.md` explaining how to use both simple and detailed user generation scripts
+- **Consistency Features**: Enhanced detailed generator with data consistency mechanisms including age-appropriate education levels, realistic income expectations, geographically consistent ethnicity distributions, and more
+
 We're a small team focused on building great things. If you have something in mind that you'd like to add or modify, opening a pull request is the ideal way to catch our attention. 🚀
 
 ### Contributing to Code Reviews 🔍
@@ -268,6 +283,65 @@ To verify that everything is set up correctly, run `pytest .` This will ensure t
 
 > \[!TIP\]
 > You need to config OPENAI API Keys as environment variables to pass all tests.
+
+## Generating User Profiles with CLI Arguments 🧑‍💼
+
+OASIS now supports command-line interface (CLI) arguments for generating user profiles in both simple and detailed modes. The following arguments are available:
+
+### User Profile Generation Scripts
+
+Two scripts are available for generating synthetic user profiles:
+
+1. **Simple Profile Generator** (`generator/reddit/user_generate.py`): Creates basic user profiles with fundamental demographic and personality information
+2. **Detailed Profile Generator** (`generator/reddit/user_generate_detailed.py`): Creates comprehensive user profiles with extensive demographic, socioeconomic, and psychological attributes
+3. **Unified Generator** (`generator/reddit/generate_users.py`): A convenient wrapper to run either simple or detailed generation with a single command
+
+### CLI Arguments
+
+The scripts support the following arguments:
+
+- `--openai-api-key`: Your OpenAI API key (required)
+- `--openai-base-url`: Custom OpenAI base URL (optional)
+- `--model-name`: Model name to use (optional, defaults to "gpt-3.5-turbo")
+- `--max-workers`: Maximum number of worker threads (optional, defaults to 100)
+- `--N-of-agents`: Number of user profiles to generate (optional, defaults to 10000)
+- `--output-path`: Output file path (optional, defaults vary by mode)
+
+### Usage Examples
+
+```bash
+# Generate simple profiles with specific parameters
+python generator/reddit/user_generate.py \
+  --openai-api-key sk-your-api-key-here \
+  --model-name gpt-4 \
+  --N-of-agents 5000 \
+  --output-path ./results/simple_users_5000.json \
+  --max-workers 50
+
+# Generate detailed profiles
+python generator/reddit/user_generate_detailed.py \
+  --openai-api-key sk-your-api-key-here \
+  --model-name gpt-4 \
+  --N-of-agents 3000 \
+  --output-path ./results/detailed_users_3000.json \
+  --max-workers 75
+
+# Use the unified generator (recommended)
+# Generate simple profiles
+python generator/reddit/generate_users.py simple \
+  --openai-api-key sk-your-api-key-here \
+  --N-of-agents 2000 \
+  --model-name gpt-4
+
+# Generate detailed profiles
+python generator/reddit/generate_users.py detailed \
+  --openai-api-key sk-your-api-key-here \
+  --N-of-agents 1000 \
+  --output-path ./results/my_detailed_users.json \
+  --max-workers 50
+```
+
+For comprehensive information on all available options and generated data attributes, see the user generation guide in `docs/user_generation_guide.md`.
 
 ## Common Actions 🔄
 
