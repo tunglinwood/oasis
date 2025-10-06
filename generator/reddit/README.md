@@ -8,7 +8,6 @@ The project includes two scripts for generating synthetic Reddit user profiles:
 
 - **Simple Profile Generator** (`user_generate.py`): Creates basic user profiles with fundamental demographic and personality information
 - **Detailed Profile Generator** (`user_generate_detailed.py`): Creates comprehensive user profiles with extensive demographic, socioeconomic, and psychological attributes
-- **Unified Generator** (`generate_users.py`): A convenient wrapper to run either simple or detailed generation with a single command
 
 ## Prerequisites
 
